@@ -72,9 +72,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 async def get_user(user: User_Pydantic = Depends(get_current_user)):
     return user
 
-@app.get('/users/admin', response_model=User_Pydantic)
-async def get_admins(user: User_Pydantic = Depends(get_current_user)):
-    return {"List of Admins" : "ADMINS"}
 
 register_tortoise(
     app,
