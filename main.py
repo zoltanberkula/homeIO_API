@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 import uuid
 from typing import List
 import os
-import time
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,6 +30,10 @@ fast_api_token_type = os.environ.get("FASTAPI_TOKEN_TYPE")
 fast_api_jwt_secret = os.environ.get("FASTAPI_JWT_SECRET")
 
 sqlite_db_url = os.environ.get("SQLITE_DB_URL")
+
+uvicorn_cfg_title = os.environ.get("UVICORN_CFG_TITLE")
+uvicorn_cfg_host = os.environ.get("UVICORN_CFG_HOST_ADDRESS")
+uvicorn_cfg_port  = int(os.environ.get("UVICORN_CFG_PORT"))
 
 
 app = FastAPI()
@@ -153,3 +157,8 @@ register_tortoise(
     generate_schemas=True,
     add_exception_handlers=True
 )
+
+if __name__ == "__main__":
+    uvicorn.run(uvicorn_cfg_title,
+                host = uvicorn_cfg_host,
+                port = uvicorn_cfg_port)
