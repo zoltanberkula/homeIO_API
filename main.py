@@ -169,6 +169,8 @@ def checkUserExistence(username:str):
         table = dynamodb.Table(aws_db_table_name)
         response = table.query(
             KeyConditionExpression=Key("bookID").eq(username))
+        print(response["Items"][0]["bookID"])
+        print(response["Items"][0]["author"])
         print(response["Items"][0]["name"])
         return True if (response["Items"]) else False
     except botoexception.DynamoDBOperationNotSupportedError:
