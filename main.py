@@ -8,6 +8,7 @@ from tortoise.models import Model
 import jwt
 import boto3
 import boto3.exceptions as botoexception
+from boto3.dynamodb.conditions import Key, Attr
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uuid
@@ -149,6 +150,38 @@ def getall():
         return items
     except botoexception.DynamoDBOperationNotSupportedError:
         return "Error NOT SUPPORTED OPERATION!"
+    except botoexception.ResourceNotExistsError:
+        return "Error RESOURCE DOES NOT EXIST!"
+
+@app.get('/getUser')
+async def getUser(username:str):
+    try:
+        table = dynamodb.Table(aws_db_table_name)
+        response = table.query(
+            KeyConditionExpression=Key("username").eq(username))
+        return response["Items"]
+    except botoexception.DynamoDBOperationNotSupportedError:
+        return "Error Operation Not supported!"
+
+@app.get('/checkUser')
+def checkUserExistence(username:str):
+    try:
+        table = dynamodb.Table(aws_db_table_name)
+        response = table.query(
+            KeyConditionExpression=Key("bookID").eq(username))
+        print(response["Items"][0]["name"])
+        return True if (response["Items"]) else False
+    except botoexception.DynamoDBOperationNotSupportedError:
+        return "Error Operation Not supported!"
+    
+
+def checkUserValidity(username:str):
+    if checkUserExistence(username):
+        return True
+    else:
+        return False
+
+
 
 register_tortoise(
     app,
