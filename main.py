@@ -7,6 +7,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.models import Model
 import jwt
 import boto3
+import boto3.exceptions as botoexception
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uuid
@@ -120,23 +121,30 @@ def read_root():
 
 @app.post('/submitdata')
 async def submitdata(data:dict):
-    table = dynamodb.Table(aws_db_table_name)
+    try:
+        table = dynamodb.Table(aws_db_table_name)
 
-    item= {
-        'bookID' : str(uuid.uuid4()),
-        'name' : data['name'],
-        'author': data['author']
-    }
-    table.put_item(Item= item)
-    #print(data)
-    return "Data submitted successfully"
+        item= {
+            'bookID' : str(uuid.uuid4()),
+            'name' : data['name'],
+            'author': data['author']
+        }
+        table.put_item(Item= item)
+        return "Data submitted successfully"
+    except botoexception.DynamoDBOperationNotSupportedError:
+        return "Error NOT SUPPORTED OPERATION!"
+    except botoexception.ResourceNotExistsError:
+        return "Error RESOURCE DOES NOT EXIST!"
+
 
 @app.get('/getAllBooks')
 def getall():
-    table = dynamodb.Table(aws_db_table_name)
-    items = table.scan()
-    #print(items)
-    return items
+    try:
+        table = dynamodb.Table(aws_db_table_name)
+        items = table.scan()
+        return items
+    except botoexception.DynamoDBOperationNotSupportedError:
+        return "Error NOT SUPPORTED OPERATION!"
 
 register_tortoise(
     app,
