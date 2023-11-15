@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from tortoise import fields
 from passlib.hash import bcrypt
 from tortoise.contrib.fastapi import register_tortoise
-from tortoise.contrib.pydantic import pydantic_model_creator
+from tortoise.contrib.pydantic.creator import pydantic_model_creator
 from tortoise.models import Model
 import jwt
 import boto3
@@ -15,37 +15,18 @@ import uuid
 from typing import List
 import os
 import uvicorn
-from dotenv import load_dotenv
 
-load_dotenv()
-
-aws_acc_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-aws_acc_key = os.environ.get("AWS_ACCESS_KEY")
-aws_db_service_id = os.environ.get("AWS_DB_SERVICE_ID")
-aws_db_service_region = os.environ.get("AWS_DB_SERVICE_REGION")
-aws_db_table_name = os.environ.get("AWS_DB_TABLE_NAME")
-
-fast_api_origin_addr = os.environ.get("FASTAPI_ORIGIN_ADDRESS")
-fast_api_token_url = os.environ.get("FASTAPI_TOKEN_URL")
-fast_api_token_type = os.environ.get("FASTAPI_TOKEN_TYPE")
-fast_api_jwt_secret = os.environ.get("FASTAPI_JWT_SECRET")
-
-sqlite_db_url = os.environ.get("SQLITE_DB_URL")
-
-uvicorn_cfg_title = os.environ.get("UVICORN_CFG_TITLE")
-uvicorn_cfg_host = os.environ.get("UVICORN_CFG_HOST_ADDRESS")
-uvicorn_cfg_port  = int(os.environ.get("UVICORN_CFG_PORT"))
-
+from modules.utils import credentials as creds
 
 app = FastAPI()
 
-dynamodb = boto3.resource(service_name=aws_db_service_id,
-                          region_name=aws_db_service_region,
-                          aws_access_key_id=aws_acc_key_id,
-                          aws_secret_access_key=aws_acc_key)
+dynamodb = boto3.resource(service_name=creds["aws_db_service_id"],
+                          region_name=creds["aws_db_service_region"],
+                          aws_access_key_id=creds["aws_acc_key_id"],
+                          aws_secret_access_key=creds["aws_acc_key"])
 
 origins = [
-    fast_api_origin_addr,
+    creds["fast_api_origin_addr"],
 ]
 
 app.add_middleware(
@@ -62,10 +43,10 @@ class User(Model):
     password_hash = fields.CharField(128)
 
     @classmethod
-    async def get_user(cls, username):
+    async def get_user(cls, username: str):
         return cls.get(username=username)
     
-    def verify_password(self, password):
+    def verify_password(self, password: str):
         return bcrypt.verify(password, self.password_hash)
     
 User_Pydantic = pydantic_model_creator(User, name='User')
@@ -91,22 +72,22 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
                             )
     
     user_obj = await User_Pydantic.from_tortoise_orm(user)
-    token = jwt.encode(user_obj.dict(), fast_api_jwt_secret)
+    token = jwt.encode(user_obj.dict(), creds["fast_api_jwt_secret"]) # type: ignore
     return {
             'access_token' : token,
-            'token_type' : fast_api_token_type
+            'token_type' : creds["fast_api_token_type"]
             }
 
 
 @app.post('/users', response_model=User_Pydantic)
-async def create_user(user: UserIn_Pydantic):
+async def create_user(user: UserIn_Pydantic): # type: ignore
     user_obj = User(username=user.username, password_hash=bcrypt.hash(user.password_hash))
     await user_obj.save()
     return await User_Pydantic.from_tortoise_orm(user_obj)
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)): # type: ignore
     try:
-        payload = jwt.decode(token, fast_api_jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, creds["fast_api_jwt_secret"], algorithms=["HS256"]) # type: ignore
         user = await User.get(id=payload.get('id'))
     except:
         raise HTTPException(
@@ -117,7 +98,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 @app.get('/users/me', response_model=User_Pydantic)
-async def get_user(user: User_Pydantic = Depends(get_current_user)):
+async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore
     return user
 
 @app.get('/')
@@ -127,7 +108,7 @@ def read_root():
 @app.post('/submitdata')
 async def submitdata(data:dict):
     try:
-        table = dynamodb.Table(aws_db_table_name)
+        table = dynamodb.Table(creds["aws_db_table_name"]) # type: ignore
 
         item= {
             'bookID' : str(uuid.uuid4()),
@@ -145,7 +126,7 @@ async def submitdata(data:dict):
 @app.get('/getAllBooks')
 def getall():
     try:
-        table = dynamodb.Table(aws_db_table_name)
+        table = dynamodb.Table(creds["aws_db_table_name"]) #type: ignore
         items = table.scan()
         return items
     except botoexception.DynamoDBOperationNotSupportedError:
@@ -156,7 +137,7 @@ def getall():
 @app.get('/getUser')
 async def getUser(username:str):
     try:
-        table = dynamodb.Table(aws_db_table_name)
+        table = dynamodb.Table(creds["aws_db_table_name"]) #type: ignore
         response = table.query(
             KeyConditionExpression=Key("username").eq(username))
         return response["Items"]
@@ -166,7 +147,7 @@ async def getUser(username:str):
 @app.get('/checkUser')
 def checkUserExistence(username:str):
     try:
-        table = dynamodb.Table(aws_db_table_name)
+        table = dynamodb.Table(creds["aws_db_table_name"]) #type: ignore
         response = table.query(
             KeyConditionExpression=Key("bookID").eq(username))
         print(response["Items"][0]["bookID"])
@@ -187,13 +168,13 @@ def checkUserValidity(username:str):
 
 register_tortoise(
     app,
-    db_url=sqlite_db_url,
+    db_url=creds["sqlite_db_url"],
     modules={'models' : ['main']},
     generate_schemas=True,
     add_exception_handlers=True
 )
 
 if __name__ == "__main__":
-    uvicorn.run(uvicorn_cfg_title,
-                host = uvicorn_cfg_host,
-                port = uvicorn_cfg_port)
+    uvicorn.run(creds["uvicorn_cfg_title"],
+                host = creds["uvicorn_cfg_host"],
+                port = int(creds["uvicorn_cfg_port"]))
