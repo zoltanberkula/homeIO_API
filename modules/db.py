@@ -12,13 +12,12 @@ constfileName = os.path.basename(__file__)
 
 dynDBErr = DynamodbErr(caller=constfileName)
 
-def dbInit():
-    dynamodb = boto3.resource(  
-        service_name=creds["aws_db_service_id"],
-        region_name=creds["aws_db_service_region"],
-        aws_access_key_id=creds["aws_acc_key_id"],
-        aws_secret_access_key=creds["aws_acc_key"]
-        )
+dynamodb = boto3.resource(  
+    service_name=creds["aws_db_service_id"],
+    region_name=creds["aws_db_service_region"],
+    aws_access_key_id=creds["aws_acc_key_id"],
+    aws_secret_access_key=creds["aws_acc_key"]
+    )
 
 @dynDBErr.commonDynamodbErrorHandler_dec
 def insertRecord(data:dict, tableName:str)-> str or dict:
