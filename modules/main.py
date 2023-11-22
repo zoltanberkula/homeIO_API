@@ -38,7 +38,7 @@ async def generateToken(form_data: OAuth2PasswordRequestForm = Depends()):
     }
 
 async def createUser(user: UserIn_Pydantic): # type: ignore
-    user_obj = User(username=user.name, password_hash=bcrypt.hash(user.password_hash))
+    user_obj = User(username=user.username, password_hash=bcrypt.hash(user.password_hash))
     await user_obj.save()
     return await User_Pydantic.from_tortoise_orm(user_obj)
 
@@ -67,7 +67,7 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     
 @app.post('/users', response_model=User_Pydantic)
 async def create_user(user: UserIn_Pydantic): #type: ignore
-    return createUser(user)
+    return await createUser(user)
 
 @app.get('/users/me', response_model=User_Pydantic)
 async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore
