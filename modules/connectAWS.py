@@ -13,9 +13,13 @@ awsClient.tls_set(ca_certs=awsCreds["caCert"],
                   keyfile=awsCreds["keyFile"],
                   tls_version=ssl.PROTOCOL_SSLv23)
 awsClient.tls_insecure_set(True)
-awsClient.connect(awsCreds["endpointAWS"], awsCreds["awsPORT"], 60)
+
+def connectAWS()-> None:
+    awsClient.connect(awsCreds["endpointAWS"], awsCreds["awsPORT"], 60)
+    awsClient.loop()
 
 @checkRUNTIME
 def publish_data(topic: str, payload: str or dict):
+    connectAWS()
     print(f"Publishing {payload} to {topic}")
     awsClient.publish(topic, payload, qos=0, retain=False)
