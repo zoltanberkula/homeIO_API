@@ -10,7 +10,7 @@ from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme
 from db import insertRecord, getTableContent
 from utils import credentials as creds
 
-from publishAWS import onOFF, sendCMD, sendRQST
+from publishAWS import onOFF, sendCMD, sendRQST, deviceON, deviceOFF
 
 app = FastAPI()
 
@@ -89,11 +89,11 @@ async def getTable():
 
 @app.post('/setdeviceon')
 async def setDeviceOn():
-    return onOFF()
+    return deviceON()
 
 @app.post('/setdeviceoff')
 async def setDeviceOff():
-    return onOFF()
+    return deviceOFF()
 
 @app.post('/senddevicecmd')
 async def sendDeviceCMD():

@@ -14,6 +14,14 @@ def onOFF(wait: int = 3)-> None:
         publish_data(tpc, msgForm.commandsOFF["RELAY_1_OFF"])
         time.sleep(wait)
 
+def deviceON(wait: int = 3)-> None:
+    publish_data(tpc, msgForm.commandsON["RELAY_1_ON"])
+    time.sleep(wait)
+
+def deviceOFF(wait: int = 3)-> None:
+    publish_data(tpc, msgForm.commandsON["RELAY_1_OFF"])
+    time.sleep(wait)
+
 def sendCMD(wait: int = 3)-> None:
     while(True):
         publish_data(tpc, generateCommandMSG("1", cmdON))
