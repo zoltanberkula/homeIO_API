@@ -10,6 +10,8 @@ from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme
 from db import insertRecord, getTableContent
 from utils import credentials as creds
 
+from publishAWS import onOFF, sendCMD, sendRQST
+
 app = FastAPI()
 
 #dbInit()
@@ -84,6 +86,23 @@ async def submitData(data: dict):
 @app.get('/gettable')
 async def getTable():
     return getTableContent(creds["aws_db_table_name"])
+
+@app.post('/setdeviceon')
+async def setDeviceOn():
+    return onOFF()
+
+@app.post('/setdeviceoff')
+async def setDeviceOff():
+    return onOFF()
+
+@app.post('/senddevicecmd')
+async def sendDeviceCMD():
+    return sendCMD()
+
+@app.get('/getdevicestatus')
+async def getDeviceStatus():
+    return sendRQST()
+
 
 register_tortoise(
     app,
