@@ -1,9 +1,10 @@
 from ast import Call
 import os
 import time
-from typing import Callable
+from typing import Any, Callable
 import uuid
 import threading
+from threading import Timer
 
 class ThreadJob(threading.Thread):
     def __init__(self, callback: Callable, event, interval):
@@ -34,25 +35,20 @@ def createDBRecord(key:str, value:str)-> dict:
         "value" : value
         }
 
-import functools
-import sched, time
-
-s = sched.scheduler(time.time, time.sleep)
-
-def setInterval(sec):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*argv, **kwargs):
-            setInterval(sec)(func)
-            func(*argv, **kwargs)
-        s.enter(sec, 1, wrapper, ())
-        return wrapper
-    s.run()
-    return decorator
+class WithThread(threading.Thread):
+    def __init__(self, target: Callable, *args: Any):
+        self._target = target
+        self._args = args
+        threading.Thread.__init__(self)
+    def run(self):
+        self._target(*self._args)
 
 
-@setInterval(sec=0.5)
-def testInterval():
-  print ("test Interval ")
+def some_Func(data, key):
+    print("some_Func was called : data=%s; key=%s" % (str(data), str(key)))
 
-#testInterval()
+f1 = threading.Thread(target=some_Func, args=([1,2], 6)) # type: ignore
+f2 = threading.Thread(target=log)
+f1.start()
+f1.join()
+
