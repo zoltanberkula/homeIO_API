@@ -63,16 +63,12 @@ def checkPasswordValidity(username: str, password: str):
         })
     #stored_password = response.get('Item, {}').get("password_hash")
     result = bcrypt.verify(password, stored_password)
-    print(result)
-    # if not stored_password or stored_password != password:
-    #     return False
-    # else:
-    #     return True
+    #print(result)
+    return True if result == True else False
 
 @dynDBErr.commonDynamodbErrorHandler_dec
 async def registerUser(user: UserIn_Pydantic)-> str or dict: #type: ignore
     table = dynamodb.Table("users")
-    #response = table.query(KeyConditionExpression=Key("username").eq(user.username))
     response = checkUserExistence(username=user.username, password=user.password_hash)
     print(response)
     if response != user.username:
