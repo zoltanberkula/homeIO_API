@@ -3,8 +3,11 @@ import os
 import boto3
 from typing import Any
 from boto3.dynamodb.conditions import Key, Attr
+from click import password_option
 from fastapi import HTTPException
 from models import UserIn_Pydantic
+
+from passlib.hash import bcrypt
 
 from utils import credentials as creds
 from errorHandling import DynamodbErr
@@ -35,15 +38,36 @@ def getTableContent(tableName:str)-> str or dict:
     return items["Items"]
 
 @dynDBErr.commonDynamodbErrorHandler_dec
-def checkUserExistence(username: str, password: str)-> str or dict:
+async def checkUserExistence(username: str, password: str)-> str or dict:
     table = dynamodb.Table("users")# type: ignore
     #response = table.query(KeyConditionExpression=Key(key).eq(key))
-    response = table.get_item(TableName="users", Key={
+    response = await table.get_item(TableName="users", Key={
         "username": username,
         "password_hash": password
     })
-    #print(response["Item"])
     return response
+
+@dynDBErr.commonDynamodbErrorHandler_dec
+def checkPasswordValidity(username: str, password: str):
+    table = dynamodb.Table("users")
+    items = table.scan()
+    stored_password = ""
+    #print(items)
+    for i in range(len(items['Items'])):
+        #print(items["Items"][i]["password_hash"])
+        if items["Items"][i]["username"] == username:
+            stored_password = items["Items"][i]["password_hash"]
+    response = table.get_item(Key={
+        "username": username,
+        "password_hash": password
+        })
+    #stored_password = response.get('Item, {}').get("password_hash")
+    result = bcrypt.verify(password, stored_password)
+    print(result)
+    # if not stored_password or stored_password != password:
+    #     return False
+    # else:
+    #     return True
 
 @dynDBErr.commonDynamodbErrorHandler_dec
 async def registerUser(user: UserIn_Pydantic)-> str or dict: #type: ignore
@@ -58,6 +82,7 @@ async def registerUser(user: UserIn_Pydantic)-> str or dict: #type: ignore
         raise HTTPException(status_code=400, detail="User already exists!")
     return {"message" : "User registered successfully"} # type: ignore
 
+@dynDBErr.commonDynamodbErrorHandler_dec
 async def loginUser(user: UserIn_Pydantic): #type: ignore
     table = dynamodb.Table("users")
     response = table.get_item(Key={"username": user.username})
@@ -68,7 +93,3 @@ async def loginUser(user: UserIn_Pydantic): #type: ignore
     #     raise
     # HTTPException(status_code=401, detail="Invalid credentials!")
     return {"message": "Login successful!"}
-
-# print(checkUserExistence(username="Zolko1995", password="$2b$12$bsJItZ6u.b.7i2DGBk4HZeaVrlTNHhUMU5HOaCTRW5/rM4cRtaSa2"))
-# print(checkUserExistence(username="LidlsParky", password="$2b$12$fO7jqFzfIBNu.aZEAZtuTOyuf6.1zO5EKzicsfICne0J6NWXGBSWi"))
-# print(checkUserExistence(username="Koltyi22", password="$2b$12$oBURKn4dNYV0jy0UjyeCsOVw3f1uxPtdS1/7lBPD8qYhu4E9WPJxG"))
