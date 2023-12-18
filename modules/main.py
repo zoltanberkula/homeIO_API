@@ -7,7 +7,7 @@ from passlib.hash import bcrypt
 from tortoise.contrib.fastapi import register_tortoise
 
 from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme
-from db import insertRecord, getTableContent
+from db import insertRecord, getTableContent, registerUser, loginUser
 from utils import credentials as creds
 
 from publishAWS import onOFF, sendCMD, sendRQST, deviceON, deviceOFF
@@ -42,6 +42,8 @@ async def generateToken(form_data: OAuth2PasswordRequestForm = Depends()):
 async def createUser(user: UserIn_Pydantic): # type: ignore
     user_obj = User(username=user.username, password_hash=bcrypt.hash(user.password_hash))
     await user_obj.save()
+    print(user_obj.username)
+    await registerUser(user_obj)
     return await User_Pydantic.from_tortoise_orm(user_obj)
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -67,9 +69,13 @@ async def authenticate_user(username: str, password: str):
 async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     return await generateToken(form_data) # type: ignore
     
-@app.post('/users', response_model=User_Pydantic)
+@app.post('/register', response_model=User_Pydantic)
 async def create_user(user: UserIn_Pydantic): #type: ignore
     return await createUser(user)
+
+@app.post('/login', response_model=User_Pydantic)
+async def login_user(user: UserIn_Pydantic): #type: ignore
+    return await loginUser(user)
 
 @app.get('/users/me', response_model=User_Pydantic)
 async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore

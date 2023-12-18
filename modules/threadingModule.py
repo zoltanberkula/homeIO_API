@@ -30,11 +30,11 @@ def checkMainTHRD(inspectorVAR: Any, threshold: Any, identifier: str):
 
 def main():
     tobeInspected: int = 0
-    threshold = 336
+    threshold = 112
     tobeInspected2: int = 0
-    threshold2 = 672
+    threshold2 = 224
     tobeInspected3: int = 0
-    threshold3 = 1008
+    threshold3 = 336
     print('**** Create a Thread with a function without any arguments ****')
 
     # Create a Thread with a function without any arguments

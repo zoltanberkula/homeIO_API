@@ -24,6 +24,6 @@ class User(Model):
         return bcrypt.verify(password, self.password_hash)
     
 User_Pydantic = pydantic_model_creator(User, name='User')
-UserIn_Pydantic = pydantic_model_creator(User, name='UserIn', exclude_readonly=True)
+UserIn_Pydantic = pydantic_model_creator(User, name='UserIn', exclude_readonly=True) # type: ignore
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
