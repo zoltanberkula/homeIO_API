@@ -1,3 +1,4 @@
+from curses.ascii import HT
 from fileinput import filename
 import os
 import boto3
@@ -5,10 +6,12 @@ from typing import Any
 from boto3.dynamodb.conditions import Key, Attr
 from click import password_option
 from fastapi import HTTPException
-from models import UserIn_Pydantic, RegisterItem, LoginItem
+#from models import UserIn_Pydantic, RegisterItem, LoginItem
 
 from passlib.hash import bcrypt as bcrpt
 import bcrypt
+
+from datetime import datetime, timedelta
 
 from utils import credentials as creds
 from errorHandling import DynamodbErr
@@ -39,73 +42,21 @@ def getTableContent(tableName:str)-> str or dict:
     return items["Items"]
 
 @dynDBErr.commonDynamodbErrorHandler_dec
-def checkUserExistence(username: str, password: str)-> str or dict:
-    table = dynamodb.Table("users")# type: ignore
-    response = table.get_item(TableName="users", Key={
-        "username": username,
-        "password_hash": password
-    })
-    if "Item" in response:
-        return True # type: ignore
-    else:
-        return False # type: ignore
-
-@dynDBErr.commonDynamodbErrorHandler_dec
-def checkPasswordValidity(username: str, password: str):
-    table = dynamodb.Table("users")
-    items = table.scan()
-    stored_password = ""
-    #print(items)
-    for i in range(len(items['Items'])):
-        #print(items["Items"][i]["password_hash"])
-        if items["Items"][i]["username"] == username:
-            stored_password = items["Items"][i]["password_hash"]
-    response = table.get_item(Key={
-        "username": username,
-        "password_hash": password
-        })
-    #stored_password = response.get('Item, {}').get("password_hash")
-    result = bcrypt.verify(password, stored_password) # type: ignore
-    #print(result)
-    return True if result == True else False
-
-@dynDBErr.commonDynamodbErrorHandler_dec
-async def registerUser(user: UserIn_Pydantic)-> str or dict: #type: ignore
-    table = dynamodb.Table("users")
-    response = checkUserExistence(username=user.username, password=user.password_hash)
-    print(response)
-    if checkUserExistence(username=user.username, password=user.password_hash):
-        item = {"username": user.username, "password_hash": user.password_hash}
-        table.put_item(Item=item)
-    else:
-        raise HTTPException(status_code=400, detail="User already exists!")
-    return {"message" : "User registered successfully"} # type: ignore
-
-@dynDBErr.commonDynamodbErrorHandler_dec
-async def loginUser(user: UserIn_Pydantic): #type: ignore
-    table = dynamodb.Table("users")
-    response = table.get_item(Key={"username": user.username})
-    print(response)
-    stored_password = response.get('Item',{}).get("password_hash")
-    print(stored_password)
-    # if not stored_password or stored_password != user.password_hash:
-    #     raise
-    # HTTPException(status_code=401, detail="Invalid credentials!")
-    return {"message": "Login successful!"}
-
-@dynDBErr.commonDynamodbErrorHandler_dec
 async def reg_user(user: dict)-> str or dict:
-    print(user)
-    table = dynamodb.Table("users")
-    hashed_password = bcrypt.hashpw(user["password"].encode('utf-8'), bcrypt.gensalt())
-    table.put_item(
-        Item={
-            "username": user["username"],
-            "password": hashed_password.decode("utf-8"),
-            "email": user["email"]
-        }
-    )
-    return "Successful registration!"
+    try:
+        print(user)
+        table = dynamodb.Table("users")
+        hashed_password = bcrypt.hashpw(user["password"].encode('utf-8'), bcrypt.gensalt())
+        table.put_item(
+            Item={
+                "username": user["username"],
+                "password": hashed_password.decode("utf-8"),
+                "email": user["email"]
+            }
+        )
+        return "Successful registration!"
+    except HTTPException:
+        return str(HTTPException(status_code=400, detail="Invalid information"))
 
 dynDBErr.commonDynamodbErrorHandler_dec
 async def login_user(user: dict)-> str or dict:
@@ -122,8 +73,18 @@ async def login_user(user: dict)-> str or dict:
     except AttributeError:
         return f'Provide an Email and Password in JSON format in the request body {400}'
 
+
+def authenticate_user(user: dict):
+    table = dynamodb.Table("users")
+    response = table.query(KeyConditionExpression=Key("username").eq(user["username"]))
+    if "Items" not in str(response):
+        return False
+    else:
+        return True
+
 # user = {
-#     "username": "JaneDoe",
-#     "password": "password456"
+#     "username": "Zolko1995",
+#     "password": "Nissan350"
 # }
-#print(login_user({"username": "JaneDoe", "password": "password456"})) # type: ignore
+
+# print(authenticate_user(user))

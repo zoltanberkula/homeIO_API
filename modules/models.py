@@ -1,3 +1,5 @@
+from operator import index
+from unittest.mock import Base
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from enum import unique
 from tortoise import fields
@@ -8,25 +10,16 @@ import jwt
 from pydantic import BaseModel, Field
 from typing import List
 import os
+from datetime import datetime, timedelta
 
 from utils import credentials as creds
 
-class User(Model):
-    id = fields.IntField(pk=True)
+class Users(Base):
+    id = fields.IntField(pk=True, index=True)
     username = fields.CharField(50, unique=True)
-    password_hash = fields.CharField(128)
+    hashed_password = fields.CharField(128)
 
-    @classmethod
-    async def get_user(cls, username: str):
-        return cls.get(username=username)
     
-    def verify_password(self, password: str):
-        return bcrypt.verify(password, self.password_hash)
-    
-User_Pydantic = pydantic_model_creator(User, name='User')
-UserIn_Pydantic = pydantic_model_creator(User, name='UserIn', exclude_readonly=True) # type: ignore
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
-
 class RegisterItem(BaseModel):
     username: str = Field(examples=["username"])
     password: str = Field(default=None, examples=["******"])
@@ -35,3 +28,4 @@ class RegisterItem(BaseModel):
 class LoginItem(BaseModel):
     username: str = Field(examples=["username"])
     password: str = Field(default=None, examples=["******"])
+

@@ -1,3 +1,5 @@
+from curses.ascii import HT
+from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,8 +8,10 @@ import jwt
 from passlib.hash import bcrypt
 from tortoise.contrib.fastapi import register_tortoise
 
-from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme, RegisterItem, LoginItem
-from db import insertRecord, getTableContent, registerUser, loginUser, reg_user, login_user
+#from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme
+from db import insertRecord, getTableContent, reg_user, login_user
+
+from auth import login_for_access_token, get_current_user
 from utils import credentials as creds
 
 from publishAWS import onOFF, sendCMD, sendRQST, deviceON, deviceOFF
@@ -26,51 +30,11 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-async def generateToken(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Invalid username or password')
     
-    user_obj = await User_Pydantic.from_tortoise_orm(user)
-    token = jwt.encode(user_obj.dict(), creds["fast_api_jwt_secret"])
-    return {
-        "access_token" : token,
-        "token_type" : creds["fast_api_token_type"]
-    }
-
-async def createUser(user: UserIn_Pydantic): # type: ignore
-    # user_obj = User(username=user.username, password_hash=bcrypt.hash(user.password_hash))
-    # await user_obj.save()
-    # print(user_obj.username)
-    # await registerUser(user_obj)
-    # return await User_Pydantic.from_tortoise_orm(user_obj)
-    return reg_user(user)
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, creds["fast_api_jwt_secret"], algorithms=["HS256"])
-        user = await User.get(id=payload.get('id'))
-    except:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Invalid username or password'
-        )
-    return await User_Pydantic.from_tortoise_orm(user)
-
-async def authenticate_user(username: str, password: str):
-    user = await User.get(username=username)
-    if not user:
-        return False
-    if not user.verify_password(password):
-        return False
-    return user
-
-
 @app.post('/token')
-async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    return await generateToken(form_data) # type: ignore
-    
+async def generate_token(user: dict):
+    return login_for_access_token(user)
+
 @app.post('/register')
 async def create_user(user: dict): #type: ignore
     #print(user)
@@ -81,17 +45,13 @@ async def login(user: dict): #type: ignore
     #print(user)
     return await login_user(user)
 
-# @app.get('/users/me', response_model=User_Pydantic)
-# async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore
-#     return user
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
-# @app.get('/')
-# async def read_root():
-#     return "HELLO THERE!!!"
-
-# @app.post('/submitdata')
-# async def submitData(data: dict):
-#     return insertRecord(data, creds["aws_db_table_name"])
+@app.get('/me', status_code=status.HTTP_200_OK)
+async def user(user: user_dependency):
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed.")
+    return {"User": user}
 
 @app.get('/gettable/{tableName}')
 async def getTable(tableName):
