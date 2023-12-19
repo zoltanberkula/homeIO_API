@@ -6,7 +6,7 @@ import jwt
 from passlib.hash import bcrypt
 from tortoise.contrib.fastapi import register_tortoise
 
-from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme
+from models import User, User_Pydantic, UserIn_Pydantic, oauth2_scheme, RegisterItem, LoginItem
 from db import insertRecord, getTableContent, registerUser, loginUser, reg_user, login_user
 from utils import credentials as creds
 
@@ -65,6 +65,7 @@ async def authenticate_user(username: str, password: str):
     if not user.verify_password(password):
         return False
     return user
+
 
 @app.post('/token')
 async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):

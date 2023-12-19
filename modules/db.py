@@ -5,7 +5,7 @@ from typing import Any
 from boto3.dynamodb.conditions import Key, Attr
 from click import password_option
 from fastapi import HTTPException
-from models import UserIn_Pydantic
+from models import UserIn_Pydantic, RegisterItem, LoginItem
 
 from passlib.hash import bcrypt as bcrpt
 import bcrypt
@@ -108,7 +108,7 @@ async def reg_user(user: dict)-> str or dict:
     return "Successful registration!"
 
 dynDBErr.commonDynamodbErrorHandler_dec
-async def login_user(user: dict)-> str:
+async def login_user(user: dict)-> str or dict:
     try:
         table = dynamodb.Table("users")
         response = table.query(KeyConditionExpression=Key("username").eq(user["username"]))
@@ -122,9 +122,6 @@ async def login_user(user: dict)-> str:
     except AttributeError:
         return f'Provide an Email and Password in JSON format in the request body {400}'
 
-# #print(reg_user("JohnDoe", "password123", {"email": "johndoe@cit.co"}))
-# #print(reg_user("JaneDoe", "password456", "janedoe@cit.com"))
-# #print(login_user("JohnDoe", "password123"))
 # user = {
 #     "username": "JaneDoe",
 #     "password": "password456"

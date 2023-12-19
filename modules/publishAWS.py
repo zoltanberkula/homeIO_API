@@ -19,7 +19,7 @@ def deviceON(wait: int = 3)-> None:
     time.sleep(wait)
 
 def deviceOFF(wait: int = 3)-> None:
-    publish_data(tpc, msgForm.commandsON["RELAY_1_OFF"])
+    publish_data(tpc, msgForm.commandsOFF["RELAY_1_OFF"])
     time.sleep(wait)
 
 def sendCMD(wait: int = 3)-> None:

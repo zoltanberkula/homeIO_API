@@ -27,3 +27,11 @@ User_Pydantic = pydantic_model_creator(User, name='User')
 UserIn_Pydantic = pydantic_model_creator(User, name='UserIn', exclude_readonly=True) # type: ignore
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
+class RegisterItem(BaseModel):
+    username: str = Field(examples=["username"])
+    password: str = Field(default=None, examples=["******"])
+    email: str = Field(examples=["your@email.com"])
+
+class LoginItem(BaseModel):
+    username: str = Field(examples=["username"])
+    password: str = Field(default=None, examples=["******"])
