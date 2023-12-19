@@ -80,21 +80,21 @@ async def login(user: dict): #type: ignore
     #print(user)
     return await login_user(user)
 
-@app.get('/users/me', response_model=User_Pydantic)
-async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore
-    return user
+# @app.get('/users/me', response_model=User_Pydantic)
+# async def get_user(user: User_Pydantic = Depends(get_current_user)): # type: ignore
+#     return user
 
-@app.get('/')
-async def read_root():
-    return "HELLO THERE!!!"
+# @app.get('/')
+# async def read_root():
+#     return "HELLO THERE!!!"
 
-@app.post('/submitdata')
-async def submitData(data: dict):
-    return insertRecord(data, creds["aws_db_table_name"])
+# @app.post('/submitdata')
+# async def submitData(data: dict):
+#     return insertRecord(data, creds["aws_db_table_name"])
 
-@app.get('/gettable')
-async def getTable():
-    return getTableContent(creds["aws_db_table_name"])
+@app.get('/gettable/{tableName}')
+async def getTable(tableName):
+    return getTableContent(tableName)
 
 @app.post('/setdeviceon')
 async def setDeviceOn():
