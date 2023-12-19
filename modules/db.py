@@ -7,7 +7,8 @@ from click import password_option
 from fastapi import HTTPException
 from models import UserIn_Pydantic
 
-from passlib.hash import bcrypt
+from passlib.hash import bcrypt as bcrpt
+import bcrypt
 
 from utils import credentials as creds
 from errorHandling import DynamodbErr
@@ -38,14 +39,16 @@ def getTableContent(tableName:str)-> str or dict:
     return items["Items"]
 
 @dynDBErr.commonDynamodbErrorHandler_dec
-async def checkUserExistence(username: str, password: str)-> str or dict:
+def checkUserExistence(username: str, password: str)-> str or dict:
     table = dynamodb.Table("users")# type: ignore
-    #response = table.query(KeyConditionExpression=Key(key).eq(key))
-    response = await table.get_item(TableName="users", Key={
+    response = table.get_item(TableName="users", Key={
         "username": username,
         "password_hash": password
     })
-    return response
+    if "Item" in response:
+        return True # type: ignore
+    else:
+        return False # type: ignore
 
 @dynDBErr.commonDynamodbErrorHandler_dec
 def checkPasswordValidity(username: str, password: str):
@@ -62,7 +65,7 @@ def checkPasswordValidity(username: str, password: str):
         "password_hash": password
         })
     #stored_password = response.get('Item, {}').get("password_hash")
-    result = bcrypt.verify(password, stored_password)
+    result = bcrypt.verify(password, stored_password) # type: ignore
     #print(result)
     return True if result == True else False
 
@@ -71,7 +74,7 @@ async def registerUser(user: UserIn_Pydantic)-> str or dict: #type: ignore
     table = dynamodb.Table("users")
     response = checkUserExistence(username=user.username, password=user.password_hash)
     print(response)
-    if response != user.username:
+    if checkUserExistence(username=user.username, password=user.password_hash):
         item = {"username": user.username, "password_hash": user.password_hash}
         table.put_item(Item=item)
     else:
@@ -89,3 +92,41 @@ async def loginUser(user: UserIn_Pydantic): #type: ignore
     #     raise
     # HTTPException(status_code=401, detail="Invalid credentials!")
     return {"message": "Login successful!"}
+
+@dynDBErr.commonDynamodbErrorHandler_dec
+async def reg_user(user: dict)-> str or dict:
+    print(user)
+    table = dynamodb.Table("users")
+    hashed_password = bcrypt.hashpw(user["password"].encode('utf-8'), bcrypt.gensalt())
+    table.put_item(
+        Item={
+            "username": user["username"],
+            "password": hashed_password.decode("utf-8"),
+            "email": user["email"]
+        }
+    )
+    return "Successful registration!"
+
+dynDBErr.commonDynamodbErrorHandler_dec
+async def login_user(user: dict)-> str:
+    try:
+        table = dynamodb.Table("users")
+        response = table.query(KeyConditionExpression=Key("username").eq(user["username"]))
+        if "Items" not in str(response):
+            return "User not found"
+        hash = str(response["Items"][0]["password"]).encode("utf-8")
+        if bcrypt.checkpw(str(user["password"]).encode('utf-8'), hash):
+            return f'Logged in, Welcome aboard {user["username"]}! {200}'
+        else:
+            return f'Invalid Login Info! {400}'
+    except AttributeError:
+        return f'Provide an Email and Password in JSON format in the request body {400}'
+
+# #print(reg_user("JohnDoe", "password123", {"email": "johndoe@cit.co"}))
+# #print(reg_user("JaneDoe", "password456", "janedoe@cit.com"))
+# #print(login_user("JohnDoe", "password123"))
+# user = {
+#     "username": "JaneDoe",
+#     "password": "password456"
+# }
+#print(login_user({"username": "JaneDoe", "password": "password456"})) # type: ignore

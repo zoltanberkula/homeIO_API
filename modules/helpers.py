@@ -44,11 +44,11 @@ class WithThread(threading.Thread):
         self._target(*self._args)
 
 
-def some_Func(data, key):
-    print("some_Func was called : data=%s; key=%s" % (str(data), str(key)))
+# def some_Func(data, key):
+#     print("some_Func was called : data=%s; key=%s" % (str(data), str(key)))
 
-f1 = threading.Thread(target=some_Func, args=([1,2], 6)) # type: ignore
-f2 = threading.Thread(target=log)
-f1.start()
-f1.join()
+# f1 = threading.Thread(target=some_Func, args=([1,2], 6)) # type: ignore
+# f2 = threading.Thread(target=log)
+# f1.start()
+# f1.join()
 
