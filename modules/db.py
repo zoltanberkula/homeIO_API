@@ -81,10 +81,3 @@ def authenticate_user(user: dict):
         return False
     else:
         return True
-
-# user = {
-#     "username": "Zolko1995",
-#     "password": "Nissan350"
-# }
-
-# print(authenticate_user(user))

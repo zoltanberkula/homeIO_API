@@ -53,10 +53,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 
 user = {
-    "username": "Zolko1995",
-    "password": "Nissan350"
+    "username": "ZdKO",
+    "password": "XFG"
 }
-# print(login_for_access_token(user))
-# print(get_current_user(str(login_for_access_token(user))))
-# print(oauth2_bearer)
-# print(get_current_user("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJab2xrbzE5OTUiLCJpZCI6Ik5pc3NhbjM1MCIsImV4cCI6MTcwMzAyNDU3NX0.91wflzgvwchQ3-VbbwyH8BMFJa7xcfCAJnDpByp-gTw"))
