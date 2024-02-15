@@ -4,7 +4,7 @@
 
 ## Description
 
-A **RESTful API** developed by using the **FastAPI** python framework with **OAuth2** and **JWT** authentication. Furthermore extended with **MQTT** functionality for direct control over **IOT** devices integrated into the infrastructure.
+A **RESTful API** developed using the **FastAPI** python framework with **OAuth2** and **JWT** authentication. Furthermore extended with **MQTT** functionality for direct control over **IOT** devices integrated into the infrastructure.
 
 ## Stack
 
